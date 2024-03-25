@@ -1,58 +1,190 @@
-<!-- edit_recording.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Recording</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
 
-{% block content %}
-<div class="container mt-4">
-    <div class="row mb-3">
-        <div class="col-12">
-            <h2 class="text-primary">Edit Recording: {{ recording.name }}</h2>
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        h2 {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        audio {
+            width: 100%;
+        }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-label {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .form-range {
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    {% block content %}
+    <div class="container mt-4">
+        <div class="row mb-3">
+            <div class="col-12">
+                <h2>Edit Recording: {{ recording.name }}</h2>
+            </div>
         </div>
-    </div>
 
-    <div class="row mb-2">
-        <div class="col">
-            <a href="{% url 'recordings_list' %}" class="btn btn-secondary btn-sm">&larr; Back</a>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-12">
-            <audio controls id="audioPlayer" class="w-100">
-                <source src="{{ recording.audio_file.url }}" type="audio/wav">
-                Your browser does not support the audio element.
-            </audio>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="playbackSpeed" class="form-label text-primary">Playback Speed:</label>
-            <select id="playbackSpeed" class="form-select">
-                <option value="0.5">0.5x</option>
-                <option value="0.75">0.75x</option>
-                <option value="1" selected>Normal Speed</option>
-                <option value="1.25">1.25x</option>
-                <option value="1.5">1.5x</option>
-                <option value="2">2x</option>
-            </select>
+        <div class="row mb-2">
+            <div class="col">
+                <a href="{% url 'recordings_list' %}" class="btn btn-secondary btn-sm">&larr; Back</a>
+            </div>
         </div>
 
-        <div class="col-md-6">
-            <label for="volumeControl" class="form-label text-primary">Volume:</label>
-            <input type="range" id="volumeControl" class="form-range" min="0" max="1" step="0.01" value="1">
+        <div class="row mb-4">
+            <div class="col-12">
+                <audio controls id="audioPlayer">
+                    <source src="{{ recording.audio_file.url }}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <canvas id="audioVisualizer" width="600" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="playbackSpeed" class="form-label">Playback Speed:</label>
+                <select id="playbackSpeed" class="form-select">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1" selected>Normal Speed</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="volumeControl" class="form-label">Volume:</label>
+                <input type="range" id="volumeControl" class="form-range" min="0" max="1" step="0.01" value="1">
+                <span id="volumeDisplay">100%</span>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Mute:</label>
+                <button id="muteButton" class="btn btn-primary">Mute</button>
+            </div>
         </div>
     </div>
 
     <script>
+        var audioPlayer = document.getElementById('audioPlayer');
+        var canvas = document.getElementById('audioVisualizer');
+        var ctx = canvas.getContext('2d');
+        var analyser, dataArray;
+
+        // Create AudioContext object
+        var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        var source = audioContext.createMediaElementSource(audioPlayer);
+        analyser = audioContext.createAnalyser();
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        // Function to draw sound visualization
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            // Get sound data
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Clear visualization area
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set visualization parameters
+            var barWidth = (canvas.width / dataArray.length) * 2.5;
+            var barHeight;
+            var x = 0;
+
+            // Draw visualization
+            for(var i = 0; i < dataArray.length; i++) {
+                barHeight = dataArray[i] / 2;
+
+                ctx.fillStyle = 'rgb(' + (barHeight + 100) + ',50,50)';
+                ctx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight);
+
+                x += barWidth + 1;
+            }
+        }
+
+        // Start drawing visualization
+        drawVisualizer();
+
         document.getElementById('playbackSpeed').addEventListener('change', function() {
-            var audioPlayer = document.getElementById('audioPlayer');
             audioPlayer.playbackRate = this.value;
         });
 
-        document.getElementById('volumeControl').addEventListener('input', function() {
-            var audioPlayer = document.getElementById('audioPlayer');
+        var volumeControl = document.getElementById('volumeControl');
+        var volumeDisplay = document.getElementById('volumeDisplay');
+        var muteButton = document.getElementById('muteButton');
+        var previousVolume = audioPlayer.volume;
+
+        volumeControl.addEventListener('input', function() {
             audioPlayer.volume = this.value;
+            // Update the volume display
+            var volumePercentage = Math.round(this.value * 100);
+            volumeDisplay.textContent = volumePercentage + '%';
+        });
+
+        muteButton.addEventListener('click', function() {
+            if (audioPlayer.volume !== 0) {
+                // Mute
+                previousVolume = audioPlayer.volume;
+                audioPlayer.volume = 0;
+                muteButton.textContent = 'Unmute';
+            } else {
+                // Unmute
+                audioPlayer.volume = previousVolume;
+                muteButton.textContent = 'Mute';
+            }
         });
     </script>
 
-</div>
-{% endblock %}
+    {% endblock %}
+</body>
+</html>
