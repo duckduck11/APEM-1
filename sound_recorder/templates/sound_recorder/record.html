@@ -13,6 +13,7 @@
     <h2>Previously Recorded Sounds:</h2>
     <ul id="recordingsList">
         <!-- Recordings will be dynamically added here -->
+        <button id="viewAllRecordings">View All Recordings</button>
     </ul>
 
     <script>
@@ -105,6 +106,11 @@
             }
             return cookieValue;
         }
+
+        document.getElementById('viewAllRecordings').onclick = function() {
+            window.location.href = '/recordings/';
+        };
+
     </script>
 </body>
 </html>

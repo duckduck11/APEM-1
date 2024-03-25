@@ -6,16 +6,37 @@
 </head>
 <body>
     <h1>Recordings List</h1>
+    <h3><a href="{% url 'record' %}" class="btn btn-secondary btn-sm">&larr; Back</a></h3>
     <ul>
         {% for recording in recordings %}
-            <li>
-                {{ recording.name }} - 
-                <a href="{{ recording.audio_file.url }}" download>Download</a> - 
-                <audio controls>
-                    <source src="{{ recording.audio_file.url }}" type="audio/wav">
-                    Your browser does not support the audio element.
-                </audio>
-            </li>
+        <li>
+            {{ recording.name }} 
+            <a href="{{ recording.audio_file.url }}" download>Download</a> 
+    
+            <!-- 'Rename' form and input -->
+            <form action="{% url 'rename_recording' recording.id %}" method="post" style="display: inline-block;">
+                {% csrf_token %}
+                <input type="text" name="name" value="{{ recording.name }}">
+                <button type="submit" class="btn btn-info btn-sm">Rename</button>
+            </form>
+            
+              <!-- 'Edit' form and button -->
+              <form action="{% url 'edit_recording' recording.id %}" method="get" style="display: inline-block;">
+                <button type="submit" class="btn btn-secondary btn-sm">Edit</button>
+            </form>
+    
+            <!-- 'Delete' form and button -->
+            <form action="{% url 'delete_recording' recording.id %}" method="post" style="display: inline-block;">
+                {% csrf_token %}
+                <input type="hidden" name="recording_id" value="{{ recording.id }}">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+
+            <audio controls>
+                <source src="{{ recording.audio_file.url }}" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+        </li>
         {% endfor %}
     </ul>
 </body>

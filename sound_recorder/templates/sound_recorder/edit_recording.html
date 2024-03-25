@@ -1,0 +1,29 @@
+<!-- edit_recording.html -->
+
+{% block content %}
+    <h2>Edit Recording: {{ recording.name }}</h2>
+
+    <h3><a href="{% url 'recordings_list' %}" class="btn btn-secondary btn-sm">&larr; Back</a></h3>
+
+    <audio controls id="audioPlayer">
+        <source src="{{ recording.audio_file.url }}" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+
+    <label for="playbackSpeed">Playback Speed:</label>
+    <select id="playbackSpeed">
+        <option value="0.5">0.5x</option>
+        <option value="0.75">0.75x</option>
+        <option value="1" selected>Normal Speed</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2x</option>
+    </select>
+
+    <script>
+        document.getElementById('playbackSpeed').addEventListener('change', function() {
+            var audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.playbackRate = this.value;
+        });
+    </script>
+{% endblock %}
