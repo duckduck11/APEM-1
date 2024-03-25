@@ -55,3 +55,6 @@ def edit_recording_view(request, recording_id):
     recording = get_object_or_404(Recording, id=recording_id)
     # Make sure you use the correct app name in the template path
     return render(request, 'sound_recorder/edit_recording.html', {'recording': recording})
+
+def record_camera(request):
+    return render(request, 'sound_recorder/record_camera.html')

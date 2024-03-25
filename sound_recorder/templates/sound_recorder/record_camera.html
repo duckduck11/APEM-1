@@ -1,0 +1,143 @@
+<!-- record_camera.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Camera</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        #videoContainer {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #videoElement {
+            max-width: 100%;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        #recordedVideoContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .recordedVideoContainer {
+            position: relative;
+        }
+
+        .recordedVideo {
+            max-width: 300px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        .deleteButton {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px;
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Record Camera</h1>
+    <h3><a href="{% url 'record' %}" class="btn btn-secondary btn-sm">&larr; Back</a></h3>
+    <div id="videoContainer">
+        <video id="videoElement" width="640" height="480" controls autoplay></video>
+        <div class="button-container">
+            <button id="startRecordCamera" class="record-button">Start Recording</button>
+            <button id="stopRecordCamera" class="stop-button" disabled>Stop Recording</button>
+        </div>
+    </div>
+    <div id="recordedVideoContainer"></div>
+
+    <script>
+        const videoElement = document.getElementById('videoElement');
+        const startRecordCameraButton = document.getElementById('startRecordCamera');
+        const stopRecordCameraButton = document.getElementById('stopRecordCamera');
+        const recordedVideoContainer = document.getElementById('recordedVideoContainer');
+        const mediaRecorderOptions = { mimeType: 'video/webm' };
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        startRecordCameraButton.addEventListener('click', startRecording);
+        stopRecordCameraButton.addEventListener('click', stopRecording);
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                videoElement.srcObject = stream;
+                mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
+                mediaRecorder.ondataavailable = handleDataAvailable;
+            })
+            .catch((error) => {
+                console.error('Error accessing webcam:', error);
+            });
+
+        function startRecording() {
+            mediaRecorder.start();
+            startRecordCameraButton.disabled = true;
+            stopRecordCameraButton.disabled = false;
+            startRecordCameraButton.classList.add('clicked');
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            startRecordCameraButton.disabled = false;
+            stopRecordCameraButton.disabled = true;
+            startRecordCameraButton.classList.remove('clicked');
+        }
+
+        function handleDataAvailable(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const videoUrl = URL.createObjectURL(blob);
+            const videoElement = document.createElement('video');
+            videoElement.src = videoUrl;
+            videoElement.controls = true;
+            videoElement.classList.add('recordedVideo');
+            const container = document.createElement('div');
+            container.classList.add('recordedVideoContainer');
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.classList.add('deleteButton');
+            deleteButton.addEventListener('click', () => {
+                container.remove();
+            });
+            container.appendChild(videoElement);
+            container.appendChild(deleteButton);
+            recordedVideoContainer.appendChild(container);
+            recordedChunks = [];
+        }
+    </script>
+</body>
+</html>

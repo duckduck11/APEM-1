@@ -13,4 +13,5 @@ urlpatterns = [
     path('delete/<int:recording_id>/', delete_recording, name='delete_recording'),
     path('rename/<int:recording_id>/', rename_recording, name='rename_recording'),
     path('edit/<int:recording_id>/', edit_recording_view, name='edit_recording'),
+    path('record-camera/', views.record_camera, name='record_camera'),
 ]
