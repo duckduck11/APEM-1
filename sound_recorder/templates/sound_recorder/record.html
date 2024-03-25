@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Record Sound</title>
+</head>
+<body>
+    <h1>Record Sound</h1>
+    <button id="startRecord">Start Recording</button>
+    <button id="stopRecord" disabled>Stop Recording</button>
+    <audio id="audioPlayback" controls></audio>
+
+    <h2>Previously Recorded Sounds:</h2>
+    <ul id="recordingsList">
+        <!-- Recordings will be dynamically added here -->
+    </ul>
+
+    <script>
+        let startRecord = document.getElementById("startRecord");
+        let stopRecord = document.getElementById("stopRecord");
+        let audioPlayback = document.getElementById("audioPlayback");
+
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Function to fetch and render previously recorded sounds
+        function fetchRecordings() {
+            fetch('/recordings/')  // Adjust the URL as needed
+            .then(response => response.json())
+            .then(data => {
+                const recordingsList = document.getElementById('recordingsList');
+                recordingsList.innerHTML = ''; // Clear previous list
+
+                data.forEach(recording => {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        ${recording.name} - 
+                        <a href="${recording.audio_file}" download>Download</a> - 
+                        <audio controls>
+                            <source src="${recording.audio_file}" type="audio/wav">
+                            Your browser does not support the audio element.
+                        </audio>
+                    `;
+                    recordingsList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error(error));
+        }
+
+        // Call fetchRecordings function when the page loads
+        window.onload = fetchRecordings;
+
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { 'type' : 'audio/wav; codecs=opus' });
+                    audioChunks = [];
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioUrl;
+
+                    let formData = new FormData();
+                    formData.append('name', 'New Recording');
+                    formData.append('audio_file', audioBlob, 'recording.wav');
+
+                    fetch('/upload/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch(error => console.error(error));
+                };
+            });
+
+        startRecord.onclick = () => {
+            mediaRecorder.start();
+            startRecord.disabled = true;
+            stopRecord.disabled = false;
+        };
+
+        stopRecord.onclick = () => {
+            mediaRecorder.stop();
+            startRecord.disabled = false;
+            stopRecord.disabled = true;
+        };
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

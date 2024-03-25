@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Recordings List</title>
+</head>
+<body>
+    <h1>Recordings List</h1>
+    <ul>
+        {% for recording in recordings %}
+            <li>
+                {{ recording.name }} - 
+                <a href="{{ recording.audio_file.url }}" download>Download</a> - 
+                <audio controls>
+                    <source src="{{ recording.audio_file.url }}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
